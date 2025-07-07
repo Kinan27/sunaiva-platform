@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: sunaiva-mongodb
+    restart: always
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: sunaiva
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    networks:
+      - sunaiva-network
+
+  librechat:
+    image: ghcr.io/danny-avila/librechat:latest
+    container_name: sunaiva-librechat
+    restart: always
+    ports:
+      - "${PORT:-3000}:3000"
+    depends_on:
+      - mongodb
+    environment:
+      HOST: 0.0.0.0
+      PORT: ${PORT:-3000}
+      DOMAIN_CLIENT: ${RAILWAY_PUBLIC_DOMAIN:-http://localhost:3000}
+      DOMAIN_SERVER: ${RAILWAY_PUBLIC_DOMAIN:-http://localhost:3000}
+      MONGO_URI: mongodb://sunaiva:${MONGO_PASSWORD}@mongodb:27017/LibreChat?authSource=admin
+      REDIS_URI: ${REDIS_URI}
+      CUSTOM_MIDDLEWARE: true
+      FILE_UPLOAD: true
+      FILE_SIZE_MAX: 100
+      FILE_UPLOAD_DIR: /app/uploads
+      RAG_ENABLED: true
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      STRIPE_ENABLED: true
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      ENDPOINTS: "togetherAI"
+      TOGETHER_AI_API_KEY: ${TOGETHER_AI_API_KEY}
+      TOGETHER_AI_MODELS: "mistralai/Mixtral-8x7B-Instruct-v0.1,mistralai/Mixtral-8x22B-Instruct-v0.1"
+      DEFAULT_MODEL: "mistralai/Mixtral-8x7B-Instruct-v0.1"
+      OPENAI_API_KEY: "not-needed"
+      OPENAI_MODELS: "false"
+      APP_TITLE: SUNAIVA
+      ALLOW_REGISTRATION: true
+      ALLOW_SOCIAL_LOGIN: false
+      SESSION_EXPIRY: 86400000
+      REFRESH_TOKEN_EXPIRY: 604800000
+      JWT_SECRET: ${JWT_SECRET}
+      CREDS_KEY: ${CREDS_KEY}
+      CREDS_IV: ${CREDS_IV}
+      SEARCH: true
+      MEILI_NO_ANALYTICS: true
+      MEM0_API_KEY: ${MEM0_API_KEY}
+    volumes:
+      - ./data/uploads:/app/uploads
+      - ./config:/app/config
+      - ./middleware:/app/middleware
+    networks:
+      - sunaiva-network
+
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: sunaiva-meilisearch
+    restart: always
+    volumes:
+      - meilisearch_data:/meili_data
+    environment:
+      MEILI_ENV: production
+      MEILI_NO_ANALYTICS: true
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+    networks:
+      - sunaiva-network
+
+volumes:
+  mongodb_data:
+  meilisearch_data:
+
+networks:
+  sunaiva-network:
+    driver: bridge
