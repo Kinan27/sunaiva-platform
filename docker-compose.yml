@@ -13,6 +13,46 @@ services:
     networks:
       - sunaiva-network
 
+  # Self-hosted Mem0
+  mem0:
+    image: mem0ai/mem0:latest
+    container_name: sunaiva-mem0
+    restart: always
+    environment:
+      - OPENAI_API_KEY=not-needed
+      - TOGETHER_API_KEY=${TOGETHER_AI_API_KEY}
+      - QDRANT_URL=http://qdrant:6333
+      - POSTGRES_URL=postgresql://mem0:${MEM0_DB_PASSWORD}@postgres:5432/mem0
+    depends_on:
+      - qdrant
+      - postgres
+    networks:
+      - sunaiva-network
+
+  # Vector database for Mem0
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: sunaiva-qdrant
+    restart: always
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - sunaiva-network
+
+  # PostgreSQL for Mem0
+  postgres:
+    image: postgres:15-alpine
+    container_name: sunaiva-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: mem0
+      POSTGRES_PASSWORD: ${MEM0_DB_PASSWORD}
+      POSTGRES_DB: mem0
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - sunaiva-network
+
   librechat:
     image: ghcr.io/danny-avila/librechat:latest
     container_name: sunaiva-librechat
@@ -21,6 +61,7 @@ services:
       - "${PORT:-3000}:3000"
     depends_on:
       - mongodb
+      - mem0
     environment:
       HOST: 0.0.0.0
       PORT: ${PORT:-3000}
@@ -57,7 +98,8 @@ services:
       CREDS_IV: ${CREDS_IV}
       SEARCH: true
       MEILI_NO_ANALYTICS: true
-      MEM0_API_KEY: ${MEM0_API_KEY}
+      # Self-hosted Mem0 connection
+      MEM0_URL: http://mem0:8080
     volumes:
       - ./data/uploads:/app/uploads
       - ./config:/app/config
@@ -81,6 +123,8 @@ services:
 volumes:
   mongodb_data:
   meilisearch_data:
+  qdrant_data:
+  postgres_data:
 
 networks:
   sunaiva-network:
