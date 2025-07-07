@@ -1,0 +1,13 @@
+{
+  "name": "sunaiva-platform",
+  "version": "1.0.0",
+  "description": "SUNAIVA - AI with permanent memory",
+  "scripts": {
+    "start": "npm run setup && npm run start:backend",
+    "setup": "git clone https://github.com/danny-avila/LibreChat.git app && cd app && npm install",
+    "start:backend": "cd app && npm run backend"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
